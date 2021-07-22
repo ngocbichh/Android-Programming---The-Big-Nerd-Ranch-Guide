@@ -30,6 +30,11 @@ class CheatActivity : AppCompatActivity() {
         answerTextView = findViewById(R.id.answer_text_view)
         showAnswerBUtton = findViewById(R.id.show_answer_button)
 
+        if(cheatViewModel.isAnswerShow){
+            answerTextView.setText(cheatViewModel.message)
+            setAnswerShowResult(cheatViewModel.isAnswerShow)
+        }
+
         showAnswerBUtton.setOnClickListener {
             val answerText = cheatViewModel.message
             answerTextView.setText(answerText)
