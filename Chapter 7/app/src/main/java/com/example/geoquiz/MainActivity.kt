@@ -26,8 +26,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cheatButton: Button
     private lateinit var questionTextView: TextView
 
-    private var numberOfCorrectAnswer = 0
-
     private val quizViewModel: QuizViewModel by lazy {
         ViewModelProviders.of(this).get(QuizViewModel::class.java)
     }
@@ -40,6 +38,8 @@ class MainActivity : AppCompatActivity() {
 
         val currentIndex = savedInstanceState?.getInt(KEY_INDEX, 0) ?: 0
         quizViewModel.currentIndex = currentIndex
+
+        var token = 3
 
         trueButton = findViewById(R.id.true_button)
         falseButton = findViewById(R.id.false_button)
@@ -60,16 +60,17 @@ class MainActivity : AppCompatActivity() {
             updateQuestion()
         }
 
-        cheatButton.setOnClickListener { view ->
-            val answerIsTrue = quizViewModel.currentQuestionAnswer
-            val intent = CheatActivity.newIntent(this@MainActivity, answerIsTrue)
-
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val options =
-                    ActivityOptions.makeClipRevealAnimation(view, 0, 0, view.width, view.height)
-                startActivityForResult(intent, REQUEST_CODE_CHEAT, options.toBundle())
-            } else {
+        cheatButton.setOnClickListener {
+            if(token <=3 && token != 0){
+                token--;
+                Toast.makeText(this, "Cheats remaining $token", Toast.LENGTH_SHORT).show()
+                Log.d(TAG, "Token $token")
+                val answerIsTrue = quizViewModel.currentQuestionAnswer
+                val intent = CheatActivity.newIntent(this@MainActivity, answerIsTrue)
                 startActivityForResult(intent, REQUEST_CODE_CHEAT)
+            } else {
+                cheatButton.isEnabled = false
+                Toast.makeText(this, "You are out of cheats", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -89,7 +90,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         if(requestCode == REQUEST_CODE_CHEAT) {
-            quizViewModel.isCheater = data?.getBooleanExtra(EXTRA_ANSWER_SHOWN, false) ?: false
+            quizViewModel.questionBank[quizViewModel.currentIndex].wasCheated = data?.getBooleanExtra(
+                EXTRA_ANSWER_SHOWN, false) ?:false
         }
     }
 
@@ -133,7 +135,7 @@ class MainActivity : AppCompatActivity() {
     private fun checkAnswer (userAnswer: Boolean) {
         val correctAnswer = quizViewModel.currentQuestionAnswer
         val messageResId = when {
-            quizViewModel.isCheater -> R.string.judgment_toast
+            quizViewModel.questionBank[quizViewModel.currentIndex].wasCheated -> R.string.judgment_toast
             userAnswer == correctAnswer -> R.string.corect_toast
             else -> R.string.incorrect_toast
         }

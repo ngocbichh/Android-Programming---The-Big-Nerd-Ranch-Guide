@@ -7,15 +7,19 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProviders
 
 const val EXTRA_ANSWER_SHOWN = "com.bignerdranch.android.qeoquiz.answer_shown"
 private const val EXTRA_ANSWER_IS_TRUE = "com.bignerdranch.android.qeoquiz.answer_is_true"
+private const val KEY_WAS_CHEATED = "was_cheated"
 
 class CheatActivity : AppCompatActivity() {
 
     private lateinit var answerTextView: TextView
     private lateinit var showAnswerBUtton: Button
     private var answerIsTrue = false
+    private var wasCheated = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,21 +29,34 @@ class CheatActivity : AppCompatActivity() {
         answerTextView = findViewById(R.id.answer_text_view)
         showAnswerBUtton = findViewById(R.id.show_answer_button)
 
+        wasCheated = savedInstanceState?.getBoolean(KEY_WAS_CHEATED, false) ?: false
+        setAnswerShowResult(wasCheated)
+
         showAnswerBUtton.setOnClickListener {
-            val answerText = when {
-                answerIsTrue -> R.string.true_button
-                else -> R.string.false_button
-            }
-            answerTextView.setText(answerText)
+            wasCheated = true
             setAnswerShowResult(true)
+            if(wasCheated) {
+                val answerText = when {
+                    answerIsTrue -> R.string.true_button
+                    else -> R.string.false_button
+                }
+                answerTextView.setText(answerText)
+            }
         }
     }
 
+    override fun onSaveInstanceState (outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_WAS_CHEATED, wasCheated)
+    }
+
     private fun setAnswerShowResult(isAnswerShown: Boolean) {
-        val data = Intent().apply {
-            putExtra(EXTRA_ANSWER_SHOWN, isAnswerShown)
+        if(wasCheated) {
+            val data = Intent().apply {
+                putExtra(EXTRA_ANSWER_SHOWN, isAnswerShown)
+            }
+            setResult(Activity.RESULT_OK, data)
         }
-        setResult(Activity.RESULT_OK, data)
     }
 
     companion object {
