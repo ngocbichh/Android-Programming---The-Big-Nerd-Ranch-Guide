@@ -14,7 +14,10 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.text.format.DateFormat
+import androidx.recyclerview.widget.ListAdapter
 import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.DiffUtil
+import java.text.FieldPosition
 import java.util.*
 
 private const val TAG = "CrimeListFragment"
@@ -30,7 +33,7 @@ class CrimeListFragment : Fragment() {
     private var callbacks: Callbacks? = null
 
     private lateinit var crimeRecyclerView: RecyclerView
-    private var adapter: CrimeAdapter? = CrimeAdapter(emptyList())
+    private var adapter: CrimeAdapter = CrimeAdapter()
 
     private val crimeListViewModel: CrimeListViewModel by lazy {
         ViewModelProviders.of(this).get(CrimeListViewModel::class.java)
@@ -51,7 +54,6 @@ class CrimeListFragment : Fragment() {
         crimeRecyclerView = view.findViewById(R.id.crime_recycler_view) as RecyclerView
         crimeRecyclerView.layoutManager = LinearLayoutManager(context)
         crimeRecyclerView.adapter = adapter
-
         return view
     }
 
@@ -74,7 +76,7 @@ class CrimeListFragment : Fragment() {
     }
 
     private fun updateUI(crimes: List<Crime>) {
-        adapter = CrimeAdapter(crimes)
+        adapter.submitList(crimes)
         crimeRecyclerView.adapter = adapter
     }
 
@@ -106,19 +108,24 @@ class CrimeListFragment : Fragment() {
         }
     }
 
-    private inner class CrimeAdapter (var crimes: List<Crime>)
-        : RecyclerView.Adapter<CrimeHolder>() {
+    private inner class CrimeAdapter: ListAdapter<Crime, CrimeHolder>(object :DiffUtil.ItemCallback<Crime>(){
+        override fun areItemsTheSame(oldItem: Crime, newItem: Crime): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: Crime, newItem: Crime): Boolean {
+            return  oldItem.equals(newItem)
+        }
+    }) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CrimeHolder {
+            val layoutInflater = LayoutInflater.from(context)
             val view = layoutInflater.inflate(R.layout.list_item_crime, parent, false)
             return CrimeHolder(view)
         }
 
         override fun onBindViewHolder(holder: CrimeHolder, position: Int) {
-            val crime = crimes[position]
-            holder.bind(crime)
+            holder.bind(getItem(position))
         }
-
-        override fun getItemCount() = crimes.size
     }
 
     companion object {
