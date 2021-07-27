@@ -12,19 +12,31 @@ import android.widget.CheckBox
 import android.widget.EditText
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import java.text.SimpleDateFormat
 import java.util.*
 
 private const val ARG_CRIME_ID = "crime_id"
 private const val TAG = "CrimeFragment"
 private const val DIALOG_DATE = "DialogDate"
+private const val DIALOG_TIME = "DialogTime"
 private const val REQUEST_DATE = 0
+private const val REQUEST_TIME = 1
 
-class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
+class CrimeFragment : Fragment(), DatePickerFragment.Callbacks, TimePickerFragment.Callbacks {
 
     private lateinit var crime: Crime
     private lateinit var titleField: EditText
     private lateinit var dateButton: Button
+    private lateinit var timeButton: Button
     private lateinit var solvedCheckBox: CheckBox
+
+    private var year: Int = 0
+    private var month: Int = 0
+    private var day: Int = 0
+    private var hour: Int = 0
+    private var minute: Int = 0
+
+
     private val crimeDetailViewModel: CrimeDetailViewModel by lazy {
         ViewModelProviders.of(this).get(CrimeDetailViewModel::class.java)
     }
@@ -47,6 +59,7 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
         titleField = view.findViewById(R.id.crime_title) as EditText
         dateButton = view.findViewById(R.id.crime_date) as Button
         solvedCheckBox = view.findViewById(R.id.crime_solved) as CheckBox
+        timeButton = view.findViewById(R.id.crime_time) as Button
 
         solvedCheckBox.apply {
             setOnCheckedChangeListener { _, isChecked -> crime.isSolved = isChecked }
@@ -60,6 +73,13 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
             viewLifecycleOwner, androidx.lifecycle.Observer { crime ->
                 crime?.let {
                     this.crime = crime
+                    val calendar = Calendar.getInstance()
+                    calendar.time = crime.date
+                    this.year = calendar.get(Calendar.YEAR)
+                    this.month = calendar.get(Calendar.MONTH)
+                    this.day = calendar.get(Calendar.DAY_OF_MONTH)
+                    this.hour = calendar.get(Calendar.HOUR)
+                    this.minute = calendar.get(Calendar.MINUTE)
                     updateUI()
                 }
             }
@@ -95,6 +115,13 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
                 show(this@CrimeFragment.requireFragmentManager(), DIALOG_DATE)
             }
         }
+
+        timeButton.setOnClickListener {
+            TimePickerFragment.newInstance(crime.date).apply {
+                setTargetFragment(this@CrimeFragment, REQUEST_TIME)
+                show(this@CrimeFragment.requireFragmentManager(), DIALOG_TIME)
+            }
+        }
     }
 
     override fun onStop() {
@@ -102,14 +129,25 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
         crimeDetailViewModel.saveCrime(crime)
     }
 
-    override fun onDateSelected(date: Date) {
-        crime.date = date
+    override fun onDateSelected(year: Int, month: Int, day: Int) {
+        this.year = year
+        this.month = month
+        this.day = day
+        crime.date = GregorianCalendar(this.year, this.month, this.day, this.hour, this.minute, 0).time
+        updateUI()
+    }
+
+    override fun onTimeSelected(hour: Int, minute: Int) {
+        this.hour = hour
+        this.minute = minute
+        crime.date = GregorianCalendar(this.year, this.month, this.day, this.hour, this.minute, 0).time
         updateUI()
     }
 
     private fun updateUI() {
         titleField.setText(crime.title)
-        dateButton.text = crime.date.toString()
+        dateButton.text = SimpleDateFormat("EEE, MMM d, yy").format(crime.date)
+        timeButton.text = SimpleDateFormat("h:mm").format(crime.date)
         solvedCheckBox.apply {
             isChecked = crime.isSolved
             jumpDrawablesToCurrentState()

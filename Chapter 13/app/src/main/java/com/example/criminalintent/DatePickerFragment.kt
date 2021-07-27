@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.os.Bundle
 import android.widget.DatePicker
 import androidx.fragment.app.DialogFragment
+import java.time.Year
 import java.util.*
 
 private const val ARG_DATE = "date"
@@ -12,16 +13,15 @@ private const val ARG_DATE = "date"
 class DatePickerFragment: DialogFragment() {
 
     interface Callbacks {
-        fun onDateSelected(date: Date)
+        fun onDateSelected(year: Int, month: Int, day: Int)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dateListener = DatePickerDialog.OnDateSetListener {
                 _: DatePicker, year: Int, month: Int, day: Int ->
-            val resultDate: Date = GregorianCalendar(year, month, day).time
 
             targetFragment?.let { fragment ->
-                (fragment as Callbacks).onDateSelected(resultDate)
+                (fragment as Callbacks).onDateSelected(year, month, day)
             }
         }
 
