@@ -10,17 +10,18 @@ import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
+import android.text.format.DateFormat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
-import android.text.format.DateFormat
 import android.widget.*
 import androidx.core.content.FileProvider
-import java.io.File
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProviders
 import java.util.*
+import androidx.lifecycle.Observer
+import java.io.File
 
 private const val TAG = "CrimeFragment"
 private const val ARG_CRIME_ID = "crime_id"
@@ -47,12 +48,10 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
     private val crimeDetailViewModel: CrimeDetailViewModel by lazy {
         ViewModelProviders.of(this).get(CrimeDetailViewModel::class.java)
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         crime = Crime()
         val crimeId: UUID = arguments?.getSerializable(ARG_CRIME_ID) as UUID
-        Log.d(TAG, "args bundle crime ID: $crimeId")
         crimeDetailViewModel.loadCrime(crimeId)
     }
 
@@ -62,6 +61,7 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_crime, container, false)
+
         titleField = view.findViewById(R.id.crime_title) as EditText
         dateButton = view.findViewById(R.id.crime_date) as Button
         solvedCheckBox = view.findViewById(R.id.crime_solved) as CheckBox
@@ -77,40 +77,56 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
         super.onViewCreated(view, savedInstanceState)
         crimeDetailViewModel.crimeLiveData.observe(
             viewLifecycleOwner,
-            androidx.lifecycle.Observer { crime ->
+            Observer { crime ->
                 crime?.let {
                     this.crime = crime
                     photoFile = crimeDetailViewModel.getPhotoFile(crime)
-                    photoUri = FileProvider.getUriForFile(requireActivity(), "com.example.criminalintent.fileprovider", photoFile)
+                    photoUri = FileProvider.getUriForFile(requireActivity(),
+                        "com.bignerdranch.android.criminalintent.fileprovider",
+                        photoFile)
                     updateUI()
                 }
-            }
-        )
+            })
     }
 
     override fun onStart() {
         super.onStart()
 
-        var titleWatcher = object : TextWatcher {
-            override fun beforeTextChanged(sequence: CharSequence?, start: Int, count: Int, after: Int) {
+        val titleWatcher = object : TextWatcher {
 
+            override fun beforeTextChanged(
+                sequence: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int
+            ) {
+                // This space intentionally left blank
             }
 
-            override fun onTextChanged(sequence: CharSequence?, start: Int, before: Int, count: Int) {
+            override fun onTextChanged(
+                sequence: CharSequence?,
+                start: Int,
+                before: Int,
+                count: Int
+            ) {
                 crime.title = sequence.toString()
             }
 
             override fun afterTextChanged(sequence: Editable?) {
+                // This one too
             }
         }
+
         titleField.addTextChangedListener(titleWatcher)
 
         solvedCheckBox.apply {
-            setOnCheckedChangeListener { _, isChecked -> crime.isSolved = isChecked }
+            setOnCheckedChangeListener { _, isChecked ->
+                crime.isSolved = isChecked
+            }
         }
 
         dateButton.setOnClickListener {
-            DatePickerFragment.newInstance(crime.date).apply{
+            DatePickerFragment.newInstance(crime.date).apply {
                 setTargetFragment(this@CrimeFragment, REQUEST_DATE)
                 show(this@CrimeFragment.requireFragmentManager(), DIALOG_DATE)
             }
@@ -122,26 +138,26 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
                 putExtra(Intent.EXTRA_TEXT, getCrimeReport())
                 putExtra(
                     Intent.EXTRA_SUBJECT,
-                    getString(R.string.crime_report_subject)
-                ).also { intent ->
-                    var  chooserIntent = Intent.createChooser(intent, getString(R.string.send_report))
-                    startActivity(chooserIntent)
-                }
+                    getString(R.string.crime_report_subject))
+            }.also { intent ->
+                val chooserIntent =
+                    Intent.createChooser(intent, getString(R.string.send_report))
+                startActivity(chooserIntent)
             }
         }
 
         suspectButton.apply {
-            val pickContactIntent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
-
+            val pickContactIntent =
+                Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
             setOnClickListener {
                 startActivityForResult(pickContactIntent, REQUEST_CONTACT)
             }
-
 //            pickContactIntent.addCategory(Intent.CATEGORY_HOME)
-
             val packageManager: PackageManager = requireActivity().packageManager
-            val resolvedActivity: ResolveInfo? = packageManager.resolveActivity(pickContactIntent, PackageManager.MATCH_DEFAULT_ONLY)
-            if(resolvedActivity == null) {
+            val resolvedActivity: ResolveInfo? =
+                packageManager.resolveActivity(pickContactIntent,
+                    PackageManager.MATCH_DEFAULT_ONLY)
+            if (resolvedActivity == null) {
                 isEnabled = false
             }
         }
@@ -150,32 +166,25 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
             val packageManager: PackageManager = requireActivity().packageManager
             val captureImage = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             val resolvedActivity: ResolveInfo? =
-                packageManager.resolveActivity(captureImage, PackageManager.MATCH_DEFAULT_ONLY)
-            if(resolvedActivity == null) {
+                packageManager.resolveActivity(captureImage,
+                    PackageManager.MATCH_DEFAULT_ONLY)
+            if (resolvedActivity == null) {
                 isEnabled = false
             }
-
             setOnClickListener {
                 captureImage.putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
-
                 val cameraActivities: List<ResolveInfo> =
                     packageManager.queryIntentActivities(captureImage,
-                    PackageManager.MATCH_DEFAULT_ONLY)
-
-                for(cameraActivity in cameraActivities) {
+                        PackageManager.MATCH_DEFAULT_ONLY)
+                for (cameraActivity in cameraActivities) {
                     requireActivity().grantUriPermission(
-                        cameraActivity.activityInfo.packageName, photoUri,
-                        Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
-                    )
+                        cameraActivity.activityInfo.packageName,
+                        photoUri,
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                 }
                 startActivityForResult(captureImage, REQUEST_PHOTO)
             }
         }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        crimeDetailViewModel.saveCrime(crime)
     }
 
     override fun onDateSelected(date: Date) {
@@ -183,7 +192,18 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
         updateUI()
     }
 
-    private fun updateUI(){
+    override fun onStop() {
+        super.onStop()
+        crimeDetailViewModel.saveCrime(crime)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        requireActivity().revokeUriPermission(photoUri,
+            Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+    }
+
+    private fun updateUI() {
         titleField.setText(crime.title)
         dateButton.text = crime.date.toString()
         solvedCheckBox.apply {
@@ -191,30 +211,47 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
             jumpDrawablesToCurrentState()
         }
 
-        if(crime.suspect.isNotEmpty()) {
+        if (crime.suspect.isNotEmpty()) {
             suspectButton.text = crime.suspect
+        }
+        updatePhotoView()
+    }
+
+    private fun updatePhotoView() {
+        if (photoFile.exists()) {
+            val bitmap = getScaledBitmap(photoFile.path, requireActivity())
+            photoView.setImageBitmap(bitmap)
+        } else {
+            photoView.setImageDrawable(null)
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when {
             resultCode != Activity.RESULT_OK -> return
-
             requestCode == REQUEST_CONTACT && data != null -> {
                 val contactUri: Uri? = data.data
                 val queryFields = arrayOf(ContactsContract.Contacts.DISPLAY_NAME)
-                val cursor = requireActivity().contentResolver.query(contactUri!!, queryFields, null, null, null)
+                val cursor = contactUri?.let {
+                    requireActivity().contentResolver
+                        .query(it, queryFields, null, null, null)
+                }
                 cursor?.use {
-                    if(it.count == 0) {
+                    if (it.count == 0) {
                         return
                     }
-
                     it.moveToFirst()
                     val suspect = it.getString(0)
                     crime.suspect = suspect
                     crimeDetailViewModel.saveCrime(crime)
                     suspectButton.text = suspect
                 }
+            }
+
+            requestCode == REQUEST_PHOTO -> {
+                requireActivity().revokeUriPermission(photoUri,
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                updatePhotoView()
             }
         }
     }
@@ -225,15 +262,14 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
         } else {
             getString(R.string.crime_report_unsolved)
         }
-
         val dateString = DateFormat.format(DATE_FORMAT, crime.date).toString()
-        val suspect = if(crime.suspect.isBlank()) {
+        var suspect = if (crime.suspect.isBlank()) {
             getString(R.string.crime_report_no_suspect)
         } else {
             getString(R.string.crime_report_suspect, crime.suspect)
         }
-
-        return getString(R.string.crime_report, crime.title, dateString, solvedString, suspect)
+        return getString(R.string.crime_report,
+            crime.title, dateString, solvedString, suspect)
     }
 
     companion object {

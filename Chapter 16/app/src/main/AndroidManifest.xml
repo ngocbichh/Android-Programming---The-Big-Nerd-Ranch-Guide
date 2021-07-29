@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.criminalintent">
 
+    <uses-feature android:name="android.hardware.camera"
+        android:required="false"/>
+
     <application
         android:name=".CriminalIntentApplication"
         android:allowBackup="true"
@@ -19,14 +22,15 @@
         </activity>
 
         <provider
-            android:authorities="com.example.criminalintent.fileprovider"
             android:name="androidx.core.content.FileProvider"
+            android:authorities="com.bignerdranch.android.criminalintent.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
-                android:name="android.support.FILE_PROVODER_PATHS"
+                android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/files"/>
         </provider>
+
     </application>
 
 </manifest>
