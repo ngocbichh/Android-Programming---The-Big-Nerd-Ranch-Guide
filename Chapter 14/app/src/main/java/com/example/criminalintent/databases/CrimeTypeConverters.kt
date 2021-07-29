@@ -1,11 +1,12 @@
-package com.example.criminalintent.database
+package com.example.criminalintent.databases
 
 import androidx.room.TypeConverter
 import java.util.*
 
-class CrimeTypeConverter {
+class CrimeTypeConverters {
+
     @TypeConverter
-    fun fromDate(date: Date): Long? {
+    fun fromDate(date: Date?): Long? {
         return date?.time
     }
 
@@ -17,7 +18,7 @@ class CrimeTypeConverter {
     }
 
     @TypeConverter
-    fun roUUID(uuid: String?): UUID? {
+    fun toUUID(uuid: String?): UUID? {
         return UUID.fromString(uuid)
     }
 

@@ -1,4 +1,4 @@
-package com.example.criminalintent.database
+package com.example.criminalintent.databases
 
 import androidx.lifecycle.LiveData
 import androidx.room.Dao
@@ -10,10 +10,11 @@ import java.util.*
 
 @Dao
 interface CrimeDao {
+
     @Query("SELECT * FROM crime")
     fun getCrimes(): LiveData<List<Crime>>
 
-    @Query("SELECT * FROM crime WHERE id =(:id)")
+    @Query("SELECT * FROM crime WHERE id=(:id)")
     fun getCrime(id: UUID): LiveData<Crime?>
 
     @Update
@@ -21,4 +22,5 @@ interface CrimeDao {
 
     @Insert
     fun addCrime(crime: Crime)
+
 }
