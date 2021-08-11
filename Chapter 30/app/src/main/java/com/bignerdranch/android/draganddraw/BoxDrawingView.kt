@@ -11,25 +11,24 @@ import android.view.View
 
 private const val TAG = "BoxDrawingView"
 
-class BoxDrawingView(context: Context, attrs: AttributeSet? = null):
-        View(context, attrs){
+class BoxDrawingView (context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
 
     private var currentBox: Box? = null
     private val boxen = mutableListOf<Box>()
     private val boxPaint = Paint().apply {
         color = 0x22ff0000.toInt()
     }
-    private val backgroundPaint = Paint().apply {
+    private val  backgroundPaint = Paint().apply {
         color = 0xfff8efe0.toInt()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val current = PointF(event.x, event.y)
         var action = ""
-        when(event.action) {
+        when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 action = "ACTION_DOWN"
-                // Reset drawing state
+//                Reset drawing state
                 currentBox = Box(current).also {
                     boxen.add(it)
                 }
@@ -49,24 +48,24 @@ class BoxDrawingView(context: Context, attrs: AttributeSet? = null):
             }
         }
 
-        Log.i(TAG, "$action at x=${current.x}, y=${current.y}")
+        Log.i(TAG, "$action at x = ${current.x}, y = ${current.y}")
 
         return true
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        // Fill the background
-        canvas.drawPaint(backgroundPaint)
-
-        boxen.forEach { box ->
-            canvas.drawRect(box.left, box.top, box.right, box.bottom, boxPaint)
-        }
     }
 
     private fun updateCurrentBox(current: PointF) {
         currentBox?.let {
             it.end = current
             invalidate()
+        }
+    }
+
+    override fun onDraw(canvas: Canvas) {
+//        Fill the background
+        canvas.drawPaint(backgroundPaint)
+
+        boxen.forEach { box ->
+            canvas.drawRect(box.left, box.top, box.right, box.bottom, boxPaint)
         }
     }
 }
